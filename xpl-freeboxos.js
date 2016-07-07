@@ -11,6 +11,8 @@ const Freebox = require('node-freeboxos');
 
 const version = require("./package.json").version;
 
+const LAST_ACTIVITY_INTERVAL_MS = 1000 * 60;
+
 commander.version(version);
 commander.option("-a, --deviceAliases <aliases>", "Devices aliases");
 commander.option("-j, --jsonPath <path>", "token JSON path");
@@ -61,13 +63,22 @@ commander.command('run').description("Start pooling freebox").action(
 				console.log("XPL error", error);
 			});
 
-			setInterval(() => poolFreebox(freebox, xpl), 1000*5);
+			xpl.bind((error) => {
+				if (error) {
+					console.error(error);
+					return;
+				}
+
+				setInterval(() => poolFreebox(freebox, xpl), 1000 * 5);
+			});
 		});
 
 	});
 commander.parse(process.argv);
 
 var currentHosts = {};
+var intervalHosts = {};
+var lastIntervalDate = 0;
 
 /**
  *
@@ -102,6 +113,7 @@ function poolFreebox(freebox, xpl) {
 					current: cur.enabled
 				});
 				if (cur.lastActivity) {
+					intervalHosts[hostName] = cur;
 					messages.push({
 						device: hostName + '/lastActivity',
 						current: cur.lastActivity.toISOString()
@@ -117,12 +129,17 @@ function poolFreebox(freebox, xpl) {
 					device: hostName + '/reachable',
 					current: cur.enabled
 				});
+				if (intervalHosts[hostName]) {
+					messages.push({
+						device: hostName + '/lastActivity',
+						current: intervalHosts[hostName].lastActivity.toISOString()
+					});
+					delete intervalHosts[hostName];
+					continue;
+				}
 			}
-			if (cur.lastActivity != old.lastActivity && cur.lastActivity > 0) {
-				messages.push({
-					device: hostName + '/lastActivity',
-					current: cur.lastActivity.toISOString()
-				});
+			if (cur.lastActivity && (!old.lastActivity || cur.lastActivity.getTime() !== old.lastActivity.getTime())) {
+				intervalHosts[hostName] = cur;
 			}
 		}
 
@@ -135,19 +152,44 @@ function poolFreebox(freebox, xpl) {
 				current: false,
 				lost: true
 			});
+
+			if (intervalHosts[hostName]) {
+				messages.push({
+					device: hostName + '/lastActivity',
+					current: old.lastActivity.toISOString()
+				});
+				delete intervalHosts[hostName];
+				continue;
+			}
 		}
 
-		console.log("Send ",messages);
+		var now = Date.now();
+		if (lastIntervalDate + LAST_ACTIVITY_INTERVAL_MS < now) {
+			lastIntervalDate = now;
+
+			for (var k in intervalHosts) {
+				messages.push({
+					device: k + '/lastActivity',
+					current: intervalHosts[k].lastActivity.toISOString()
+				});
+			}
+			intervalHosts = {};
+		}
+
+		console.log("Send ", messages);
 
 		async.eachSeries(messages, (message, callback) => {
-			debug("Send message=",message);
+			console.log("Send message=", message);
 
 			xpl.sendXplStat(message, "hosts.basic", callback);
 
 		}, (error) => {
 			if (error) {
 				console.error(error);
+				return;
 			}
+
+			console.log(messages.length + " messages sent !");
 		});
 
 	}).catch((error) => {
