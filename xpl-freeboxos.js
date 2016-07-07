@@ -112,17 +112,13 @@ function poolFreebox(freebox, xpl) {
 
 			delete oldHosts[k];
 
-			if (cur.enabled === old.enabled && cur.lastActivity === old.lastActivity) {
-				continue;
-			}
-
 			if (cur.enabled !== old.enabled) {
 				messages.push({
 					device: hostName + '/reachable',
 					current: cur.enabled
 				});
 			}
-			if (cur.lastActivity !== old.lastActivity && cur.lastActivity > 0) {
+			if (cur.lastActivity != old.lastActivity && cur.lastActivity > 0) {
 				messages.push({
 					device: hostName + '/lastActivity',
 					current: cur.lastActivity.toISOString()
