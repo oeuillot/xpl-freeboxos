@@ -1,0 +1,26 @@
+{
+  "name": "xpl-freeboxos",
+  "version": "0.0.1",
+  "description": "XPL bridge for Philips Hue lights",
+  "bin": {
+    "xpl-hue": "./bin/xpl-freeboxos"
+  },
+  "dependencies": {
+    "xpl-api": "latest",
+    "async": "~1.5",
+    "commander": "~2.3",
+    "debug": "~2.2",
+    "node-freeboxos": "latetst"
+  },
+  "keywords": [
+    "XPL",
+    "freebox"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Nodejs-XPL/xpl-freeboxos.git"
+  },
+  "author": "Olivier Oeuillot",
+  "license": "GPL",
+  "readmeFilename": "README.md"
+}
