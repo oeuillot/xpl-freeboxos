@@ -61,7 +61,7 @@ commander.command('run').description("Start pooling freebox").action(
 				console.log("XPL error", error);
 			});
 
-			poolFreebox(freebox, xpl);
+			setInterval(() => poolFreebox(freebox, xpl), 1000*5);
 		});
 
 	});
@@ -143,7 +143,9 @@ function poolFreebox(freebox, xpl) {
 
 		console.log("Send ",messages);
 
-		async.forEachSeries(messages, (message, callback) => {
+		async.eachSeries(messages, (message, callback) => {
+			debug("Send message=",message);
+
 			xpl.sendXplStat(message, "hosts.basic", callback);
 
 		}, (error) => {
@@ -151,8 +153,6 @@ function poolFreebox(freebox, xpl) {
 				console.error(error);
 			}
 		});
-
-		console.log("f=", filtredResult);
 
 	}).catch((error) => {
 		console.error(error);
