@@ -22,7 +22,7 @@ const app = {
 	app_name: "XPL bridge for Freebox",
 	app_version: version,
 	device_name: "NodeJs/XPL"
-}
+};
 
 commander.command('run').description("Start pooling freebox").action(
 	() => {
@@ -41,10 +41,10 @@ commander.command('run').description("Start pooling freebox").action(
 			}
 		}
 
-		var freebox = new Freebox(app);
+		var freebox = new Freebox(config);
 
 		freebox.waitApplicationGranted(1000 * 60 * 2).then((result) => {
-
+			debug("Granted result=", result);
 
 			if (!commander.xplSource) {
 				var hostName = os.hostname();
@@ -80,7 +80,7 @@ commander.parse(process.argv);
 function poolFreebox(freebox, xpl) {
 	freebox.lanBrowser().then((result) => {
 		console.log(result);
-		
+
 	}).catch((error) => {
 		console.error(error);
 	})
