@@ -61,16 +61,13 @@ commander.command('run').description("Start pooling freebox").action(
 				console.log("XPL error", error);
 			});
 
-			setInterval(() => poolFreebox(freebox, xpl), 1000 * 10);
-		});
-
-
-		p.catch((error) => {
-			console.error(error);
+			poolFreebox(freebox, xpl);
 		});
 
 	});
 commander.parse(process.argv);
+
+var currentHosts = {};
 
 /**
  *
@@ -78,8 +75,84 @@ commander.parse(process.argv);
  * @param {Xpl} xpl
  */
 function poolFreebox(freebox, xpl) {
+	debug("Pool freebox");
+
 	freebox.lanBrowser().then((result) => {
-		console.log(result);
+		result = result.filter((v) => v.primary_name);
+		var filtredResult = result.reduce((prev, v) => {
+			var lastActivity = v.last_activity ? (new Date(v.last_activity * 1000)) : undefined;
+
+			prev[v.primary_name] = {enabled: v.reachable, lastActivity: lastActivity};
+			return prev;
+		}, {});
+
+		var oldHosts = currentHosts;
+		currentHosts = filtredResult;
+		var messages = [];
+
+		for (var k in filtredResult) {
+			var cur = filtredResult[k];
+			var old = oldHosts[k];
+			var hostName = 'host/' + k.replace(/\//g, '_');
+			if (!old) {
+				// Un nouveau !!!
+
+				messages.push({
+					device: hostName + '/reachable',
+					current: cur.enabled
+				});
+				if (cur.lastActivity) {
+					messages.push({
+						device: hostName + '/lastActivity',
+						current: cur.lastActivity.toISOString()
+					});
+				}
+				continue;
+			}
+
+			delete oldHosts[k];
+
+			if (cur.enabled === old.enabled && cur.lastActivity === old.lastActivity) {
+				continue;
+			}
+
+			if (cur.enabled !== old.enabled) {
+				messages.push({
+					device: hostName + '/reachable',
+					current: cur.enabled
+				});
+			}
+			if (cur.lastActivity !== old.lastActivity && cur.lastActivity > 0) {
+				messages.push({
+					device: hostName + '/lastActivity',
+					current: cur.lastActivity.toISOString()
+				});
+			}
+		}
+
+		for (var k in oldHosts) {
+			var old = oldHosts[k];
+			var hostName = 'host/' + k.replace(/\//g, '_');
+
+			messages.push({
+				device: hostName + '/reachable',
+				current: false,
+				lost: true
+			});
+		}
+
+		console.log("Send ",messages);
+
+		async.forEachSeries(messages, (message, callback) => {
+			xpl.sendXplStat(message, "hosts.basic", callback);
+
+		}, (error) => {
+			if (error) {
+				console.error(error);
+			}
+		});
+
+		console.log("f=", filtredResult);
 
 	}).catch((error) => {
 		console.error(error);
