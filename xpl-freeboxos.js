@@ -39,6 +39,7 @@ commander.command('run').description("Start pooling freebox").action(
 				fs.accessSync(commander.jsonPath);
 
 				config.jsonPath = commander.jsonPath;
+				config.jsonAutoSave = true;
 			} catch (x) {
 			}
 		}
