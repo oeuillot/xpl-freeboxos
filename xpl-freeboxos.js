@@ -95,8 +95,9 @@ function poolFreebox(freebox, xpl) {
 		result = result.filter((v) => v.primary_name);
 		var filtredResult = result.reduce((prev, v) => {
 			var lastActivity = v.last_activity ? (new Date(v.last_activity * 1000)) : undefined;
+			var lastReachable = v.last_time_reachable ? (new Date(v.last_time_reachable * 1000)) : undefined;
 
-			prev[v.primary_name] = {enabled: v.reachable, lastActivity: lastActivity};
+			prev[v.primary_name] = {enabled: v.reachable, lastActivity, lastReachable};
 			return prev;
 		}, {});
 
@@ -128,14 +129,18 @@ function poolFreebox(freebox, xpl) {
 			delete oldHosts[k];
 
 			if (cur.enabled !== old.enabled) {
-				messages.push({
+				var en = {
 					device: hostName + '/reachable',
 					current: cur.enabled
-				});
+				};
+				if (!cur.enabled && cur.lastReachable) {
+					en.date = cur.lastReachable.toISOString();
+				}
+				messages.push(en);
 				if (intervalHosts[hostName]) {
 					messages.push({
 						device: hostName + '/lastActivity',
-						current: intervalHosts[hostName].lastActivity.toISOString()
+						current: cur.lastActivity.toISOString()
 					});
 					delete intervalHosts[hostName];
 					continue;
@@ -150,11 +155,15 @@ function poolFreebox(freebox, xpl) {
 			var old = oldHosts[k];
 			var hostName = 'host/' + k.replace(/\//g, '_');
 
-			messages.push({
+			var en = {
 				device: hostName + '/reachable',
 				current: false,
 				lost: true
-			});
+			};
+			if (old.lastReachable) {
+				en.date = old.lastReachable.toISOString();
+			}
+			messages.push(en);
 
 			if (intervalHosts[hostName]) {
 				messages.push({
@@ -179,12 +188,12 @@ function poolFreebox(freebox, xpl) {
 			intervalHosts = {};
 		}
 
-		console.log("Send ", messages);
+		debug("Send", messages.length, "messages.");
 
 		async.eachSeries(messages, (message, callback) => {
-			console.log("Send message=", message);
+			debug("Send message=", message);
 
-			xpl.sendXplStat(message, "hosts.basic", callback);
+			xpl.sendXplStat(message, "sensor.basic", callback);
 
 		}, (error) => {
 			if (error) {
@@ -192,7 +201,7 @@ function poolFreebox(freebox, xpl) {
 				return;
 			}
 
-			console.log(messages.length + " messages sent !");
+			debug("send", messages.length + " messages sent !");
 		});
 
 	}).catch((error) => {
