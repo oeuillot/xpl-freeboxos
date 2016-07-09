@@ -43,9 +43,11 @@ commander.command('run').description("Start pooling freebox").action(
 			}
 		}
 
+		config.registerDelayMs = 1000 * 60 * 2;
+
 		var freebox = new Freebox(config);
 
-		freebox.waitApplicationGranted(1000 * 60 * 2).then((result) => {
+		freebox.openSession().then((result) => {
 			debug("Granted result=", result);
 
 			if (!commander.xplSource) {
