@@ -11,7 +11,7 @@ const Freebox = require('node-freeboxos');
 
 const version = require("./package.json").version;
 
-const NO_XPL = true;
+const NO_XPL = process.env.NO_XPL;
 
 const LAST_ACTIVITY_INTERVAL_MS = 1000 * 60;
 
@@ -107,16 +107,16 @@ function poolFreebox(freebox, xpl) {
     freebox.getParentalConfig().then((result) => {
         console.log('Parental Config=', result);
 
-        if (default_filter_mode===result.default_filter_mode) {
+        if (default_filter_mode === result.default_filter_mode) {
             return;
         }
-        default_filter_mode=result.default_filter_mode;
+        default_filter_mode = result.default_filter_mode;
 
-        const message= {
+        const message = {
             device: 'parental-rule/default',
             current: default_filter_mode,
         }
-        xpl.sendXplStat(message, "sensor.basic", (error)=> {
+        xpl.sendXplStat(message, "sensor.basic", (error) => {
             if (error) {
                 console.error(error);
                 return;
@@ -147,26 +147,25 @@ function poolFreebox(freebox, xpl) {
                 device: 'parental-rule/' + desc,
                 current: forced ? (forced_mode ? 'true' : 'false') : 'planning',
             });
-
-            if (xpl) {
-                debug("Send", messages.length, "messages.");
-
-                async.eachSeries(messages, (message, callback) => {
-                    debug("Send message=", message);
-
-                    xpl.sendXplStat(message, "sensor.basic", callback);
-
-                }, (error) => {
-                    if (error) {
-                        console.error(error);
-                        return;
-                    }
-
-                    debug("send", messages.length + " messages sent !");
-                });
-            }
         });
 
+        if (xpl) {
+            debug("Send", messages.length, "messages.");
+
+            async.eachSeries(messages, (message, callback) => {
+                debug("Send message=", message);
+
+                xpl.sendXplStat(message, "sensor.basic", callback);
+
+            }, (error) => {
+                if (error) {
+                    console.error(error);
+                    return;
+                }
+
+                debug("send", messages.length + " messages sent !");
+            });
+        }
     });
 
     freebox.lanBrowser().then((result) => {
@@ -287,9 +286,4 @@ function poolFreebox(freebox, xpl) {
     }).catch((error) => {
         console.error(error);
     })
-}
-
-if (commander.headDump) {
-    var heapdump = require("heapdump");
-    console.log("***** HEAPDUMP enabled **************");
 }
