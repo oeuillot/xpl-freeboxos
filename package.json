@@ -1,16 +1,16 @@
 {
   "name": "xpl-freeboxos",
-  "version": "0.0.1",
-  "description": "XPL bridge for Philips Hue lights",
+  "version": "0.0.3",
+  "description": "XPL bridge for Freebox",
   "bin": {
-    "xpl-hue": "./bin/xpl-freeboxos"
+    "xpl-freeboxos": "./bin/xpl-freeboxos"
   },
   "dependencies": {
-    "xpl-api": "latest",
+    "xpl-api": "file:../xpl-api",
     "async": "~1.5",
-    "commander": "~2.3",
+    "commander": "latest",
     "debug": "~2.2",
-    "node-freeboxos": "latetst"
+    "node-freeboxos": "file:../node-freeboxos"
   },
   "keywords": [
     "XPL",
