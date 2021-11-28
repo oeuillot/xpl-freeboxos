@@ -339,7 +339,9 @@ function processXplMessage(freebox, deviceAliases, message) {
                 });
                 return;
             }
-            console.error('Unknown device');
+            console.error('Unknown device=', device);
             return;
     }
+
+    console.error('Unsupported command body=', body);
 }
