@@ -75,6 +75,9 @@ commander.command('run').description("Start pooling freebox").action(
                     console.log("XPL error", error);
                 });
 
+
+                xpl.on("xpl:xpl-cmnd", processXplMessage.bind(xpl, freebox, options.deviceAliases));
+
                 xpl.bind((error) => {
                     if (error) {
                         console.error(error);
@@ -286,4 +289,57 @@ function poolFreebox(freebox, xpl) {
     }).catch((error) => {
         console.error(error);
     })
+}
+
+function processXplMessage(freebox, deviceAliases, message) {
+
+    debug("processXplMessage", "Receive message", message);
+
+    if (message.bodyName !== "delabarre.command" &&
+        message.bodyName !== "x10.basic") {
+        return;
+    }
+
+    const body = message.body;
+
+    let command = body.command;
+    let device = body.device;
+    let current = body.current;
+
+    switch (command) {
+        case 'status':
+            const reg = /^parental-rule\/(.*)$/.exec(device);
+            if (reg) {
+                let parentalFilter = currentFilters && currentFilters[reg[1]];
+                if (parentalFilter === false) {
+                    console.error('Invalid parentalId for', reg[1]);
+                    return;
+                }
+                let forcedMode;
+                let forced;
+                switch (current) {
+                    case 'denied':
+                    case 'allowed':
+                        forced = true;
+                        forcedMode = current;
+                        break;
+                    case 'planning':
+                        forced = false;
+                        forcedMode = 'allowed';
+                        break;
+                    default:
+                        console.error('Unknown state', current);
+                        return;
+                }
+
+                freebox.updateParentalFilter(parentalFilter.id, forcedMode, forced, (error) => {
+                    if (error) {
+                        console.error(error);
+                    }
+                });
+                return;
+            }
+            console.error('Unknown device');
+            return;
+    }
 }
