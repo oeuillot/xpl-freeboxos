@@ -105,7 +105,7 @@ function poolFreebox(freebox, xpl) {
     console.log("Pool freebox");
 
     freebox.getParentalConfig().then((result) => {
-        console.log('Parental Config=', result);
+        debug('getParentalConfig', 'Parental Config=', result);
 
         if (default_filter_mode === result.default_filter_mode) {
             return;
@@ -128,7 +128,7 @@ function poolFreebox(freebox, xpl) {
 
 
     freebox.getParentalFilter().then((result) => {
-        console.log('Parental filters=', result);
+        debug('getParentalFilter', 'Parental filters=', result);
 
         const messages = [];
         result.forEach((f) => {
@@ -145,7 +145,7 @@ function poolFreebox(freebox, xpl) {
 
             messages.push({
                 device: 'parental-rule/' + desc,
-                current: forced ? (forced_mode ? 'true' : 'false') : 'planning',
+                current: forced ? (forced_mode) : 'planning',
             });
         });
 
