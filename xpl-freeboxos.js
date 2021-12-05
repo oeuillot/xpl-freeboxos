@@ -147,7 +147,7 @@ function poolFreebox(freebox, xpl) {
             currentFilters[desc] = f;
 
             messages.push({
-                device: 'parental-rule/' + desc,
+                device: 'parental-rule/' + desc+'/status',
                 current: forced ? (forced_mode) : 'planning',
             });
         });
@@ -339,9 +339,9 @@ function processXplMessage(freebox, deviceAliases, message) {
                 });
                 return;
             }
-            console.error('Unknown device=', device);
+            debug('processXplMessage', 'Unknown device=', device);
             return;
     }
 
-    console.error('Unsupported command body=', body);
+    debug('processXplMessage', 'Unsupported command body=', body);
 }
